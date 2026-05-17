@@ -13,6 +13,7 @@ import SignupPage from './pages/SignupPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
+import ContactWidget from './components/layout/ContactWidget.jsx'
 
 // ── URL ↔ page-state mapping tables ─────────────────────────────────────────
 const AUTH_PAGE_PATHS = {
@@ -161,34 +162,48 @@ function AppContent() {
   if (!user) {
     if (unauthPage === 'login') {
       return (
-        <LoginPage
-          onBack={() => navigateUnauth('landing')}
-          onForgotPassword={() => navigateUnauth('forgot-password')}
-        />
+        <>
+          <LoginPage
+            onBack={() => navigateUnauth('landing')}
+            onForgotPassword={() => navigateUnauth('forgot-password')}
+          />
+          <ContactWidget />
+        </>
       )
     }
     if (unauthPage === 'signup') {
       return (
-        <SignupPage
-          onSwitchToLogin={() => navigateUnauth('login')}
-          onBack={() => navigateUnauth('landing')}
-        />
+        <>
+          <SignupPage
+            onSwitchToLogin={() => navigateUnauth('login')}
+            onBack={() => navigateUnauth('landing')}
+          />
+          <ContactWidget />
+        </>
       )
     }
     if (unauthPage === 'forgot-password') {
-      return <ForgotPasswordPage onBack={() => navigateUnauth('login')} />
+      return (
+        <>
+          <ForgotPasswordPage onBack={() => navigateUnauth('login')} />
+          <ContactWidget />
+        </>
+      )
     }
     return (
-      <LandingPage
-        onSignIn={() => navigateUnauth('login')}
-        onSignUp={() => navigateUnauth('signup')}
-      />
+      <>
+        <LandingPage
+          onSignIn={() => navigateUnauth('login')}
+          onSignUp={() => navigateUnauth('signup')}
+        />
+        <ContactWidget />
+      </>
     )
   }
 
   // ── Super admin: bypass workspace requirement entirely ─────────────────────────
   if (isSuperAdmin) {
-    if (page === 'pricing') return <PricingPage onNavigate={navigate} />
+    if (page === 'pricing') return <><PricingPage onNavigate={navigate} /><ContactWidget /></>
     return <SuperAdminPage onNavigate={navigate} />
   }
 
@@ -249,33 +264,31 @@ function AppContent() {
   }
 
   // ── Authenticated pages ───────────────────────────────────────────────────────
+  let pageContent
   if (page === 'pricing') {
-    return <PricingPage onNavigate={navigate} />
-  }
-  if (page === 'team' && role === 'admin') {
-    return <TeamPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
-  }
-  if (page === 'presets' && role === 'admin') {
-    return <PresetsPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
-  }
-  if (page === 'settings' && role === 'admin') {
-    return <SettingsPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
-  }
-  if (page === 'billing' && role === 'admin') {
-    return <BillingPage onNavigate={navigate} />
-  }
-  if (page === 'quote') {
-    return <QuotePage quoteId={activeQuoteId} onBack={() => navigate('dashboard')} onNavigate={navigate} />
+    pageContent = <PricingPage onNavigate={navigate} />
+  } else if (page === 'team' && role === 'admin') {
+    pageContent = <TeamPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
+  } else if (page === 'presets' && role === 'admin') {
+    pageContent = <PresetsPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
+  } else if (page === 'settings' && role === 'admin') {
+    pageContent = <SettingsPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
+  } else if (page === 'billing' && role === 'admin') {
+    pageContent = <BillingPage onNavigate={navigate} />
+  } else if (page === 'quote') {
+    pageContent = <QuotePage quoteId={activeQuoteId} onBack={() => navigate('dashboard')} onNavigate={navigate} />
+  } else {
+    pageContent = (
+      <Dashboard
+        onOpenQuote={openQuote}
+        onNavigate={navigate}
+        upgraded={upgraded}
+        onDismissUpgraded={() => setUpgraded(false)}
+      />
+    )
   }
 
-  return (
-    <Dashboard
-      onOpenQuote={openQuote}
-      onNavigate={navigate}
-      upgraded={upgraded}
-      onDismissUpgraded={() => setUpgraded(false)}
-    />
-  )
+  return <>{pageContent}<ContactWidget /></>
 }
 
 export default function App() {
