@@ -73,8 +73,12 @@ export default function PricingPage({ onNavigate }) {
 
   async function handleUpgrade() {
     const priceId = isAnnual ? PRO_PRICE_ID_ANNUAL : PRO_PRICE_ID_MONTHLY
+    console.log('[checkout] billing:', billing, 'priceId:', priceId,
+      'monthly:', PRO_PRICE_ID_MONTHLY, 'annual:', PRO_PRICE_ID_ANNUAL)
     if (!priceId) {
-      setCheckoutError('Stripe is not configured yet. Contact support to upgrade.')
+      setCheckoutError(
+        `Missing env var: ${isAnnual ? 'VITE_STRIPE_PRO_PRICE_ID_ANNUAL' : 'VITE_STRIPE_PRO_PRICE_ID'}`
+      )
       return
     }
     setCheckoutLoading(true)
