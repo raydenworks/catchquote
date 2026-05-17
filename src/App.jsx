@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import QuotePage from './pages/QuotePage.jsx'
@@ -14,6 +14,56 @@ import LandingPage from './pages/LandingPage.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 
+// ── URL ↔ page-state mapping tables ─────────────────────────────────────────
+const AUTH_PAGE_PATHS = {
+  dashboard:  '/dashboard',
+  pricing:    '/pricing',
+  team:       '/team',
+  presets:    '/presets',
+  settings:   '/settings',
+  billing:    '/billing',
+  superadmin: '/admin',
+}
+const PATH_TO_AUTH_PAGE = Object.fromEntries(
+  Object.entries(AUTH_PAGE_PATHS).map(([k, v]) => [v, k])
+)
+
+const UNAUTH_PAGE_PATHS = {
+  landing:           '/',
+  login:             '/login',
+  signup:            '/signup',
+  'forgot-password': '/forgot-password',
+}
+const PATH_TO_UNAUTH_PAGE = Object.fromEntries(
+  Object.entries(UNAUTH_PAGE_PATHS).map(([k, v]) => [v, k])
+)
+
+function parsePathname(pathname) {
+  if (pathname.startsWith('/quotes/')) {
+    const seg = pathname.slice('/quotes/'.length)
+    return { page: 'quote', unauthPage: 'landing', quoteId: seg === 'new' ? null : (seg || null) }
+  }
+  if (PATH_TO_AUTH_PAGE[pathname]) {
+    return { page: PATH_TO_AUTH_PAGE[pathname], unauthPage: 'landing', quoteId: null }
+  }
+  if (PATH_TO_UNAUTH_PAGE[pathname]) {
+    return { page: 'dashboard', unauthPage: PATH_TO_UNAUTH_PAGE[pathname], quoteId: null }
+  }
+  return { page: 'dashboard', unauthPage: 'landing', quoteId: null }
+}
+
+function consumeUpgradeParam() {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('upgraded') === 'true') {
+    window.history.replaceState({}, '', window.location.pathname)
+    return true
+  }
+  return false
+}
+
+const INITIAL_PATH    = window.location.pathname
+const INITIAL_STATE   = parsePathname(INITIAL_PATH)
+
 const Spinner = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
     <div className="text-center">
@@ -26,47 +76,85 @@ const Spinner = () => (
   </div>
 )
 
-function consumeUpgradeParam() {
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('upgraded') === 'true') {
-    window.history.replaceState({}, '', window.location.pathname)
-    return true
-  }
-  return false
-}
-
-const INITIAL_PATH = window.location.pathname
-
 function AppContent() {
   const { user, workspace, role, loading, workspaceError, workspaceReady, isSuperAdmin, signOut, retryWorkspace } = useAuth()
-  const [page,          setPage]          = useState('dashboard')
-  const [activeQuoteId, setActiveQuoteId] = useState(null)
-  const [unauthPage,    setUnauthPage]    = useState('landing')
-  // Initialised once from the URL — true when returning from a successful Stripe checkout.
-  const [upgraded,      setUpgraded]      = useState(consumeUpgradeParam)
 
+  const [page,             setPage]             = useState(INITIAL_STATE.page)
+  const [activeQuoteId,    setActiveQuoteId]    = useState(INITIAL_STATE.quoteId)
+  const [unauthPage,       setUnauthPage]       = useState(INITIAL_STATE.unauthPage)
+  const [showResetPw,      setShowResetPw]      = useState(INITIAL_PATH === '/reset-password')
+  const [upgraded,         setUpgraded]         = useState(consumeUpgradeParam)
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function pagePath(pg, quoteId = null) {
+    if (pg === 'quote') return quoteId ? `/quotes/${quoteId}` : '/quotes/new'
+    return AUTH_PAGE_PATHS[pg] ?? '/dashboard'
+  }
+
+  // Authenticated page navigation
   function navigate(pg) {
     if ((pg === 'team' || pg === 'presets' || pg === 'settings' || pg === 'billing') && role !== 'admin') return
     if (pg === 'superadmin' && !isSuperAdmin) return
     setPage(pg)
     if (pg !== 'quote') setActiveQuoteId(null)
+    window.history.pushState({ pg }, '', pagePath(pg))
+  }
+
+  // Unauthenticated page navigation
+  function navigateUnauth(pg) {
+    setUnauthPage(pg)
+    window.history.pushState({ unauthPage: pg }, '', UNAUTH_PAGE_PATHS[pg] ?? '/')
   }
 
   function openQuote(id) {
     setActiveQuoteId(id)
     setPage('quote')
+    window.history.pushState({ pg: 'quote', quoteId: id }, '', `/quotes/${id}`)
   }
 
-  // ── Password reset — must be checked before any auth gate ───────────────────
-  if (INITIAL_PATH === '/reset-password') {
+  // ── Sync URL on auth-state change (login / logout) ───────────────────────────
+  useEffect(() => {
+    if (loading && !workspaceReady) return
+    const pathname = window.location.pathname
+    if (user) {
+      const isUnauthPath = PATH_TO_UNAUTH_PAGE[pathname] !== undefined
+      if (isUnauthPath) {
+        window.history.replaceState({ pg: page }, '', pagePath(page, activeQuoteId))
+      }
+    } else {
+      const isAuthPath = PATH_TO_AUTH_PAGE[pathname] !== undefined ||
+        pathname.startsWith('/quotes/')
+      if (isAuthPath) {
+        window.history.replaceState({}, '', '/')
+      }
+    }
+  }, [user, loading, workspaceReady]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Browser back / forward ───────────────────────────────────────────────────
+  useEffect(() => {
+    function onPopState() {
+      const parsed = parsePathname(window.location.pathname)
+      setPage(parsed.page)
+      setUnauthPage(parsed.unauthPage)
+      setActiveQuoteId(parsed.quoteId)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  // ── Password reset — checked before any auth gate ─────────────────────────────
+  if (showResetPw) {
     return (
       <ResetPasswordPage
-        onInvalidToken={() => { window.history.replaceState({}, '', '/'); setUnauthPage('forgot-password') }}
+        onInvalidToken={() => {
+          setShowResetPw(false)
+          navigateUnauth('forgot-password')
+        }}
       />
     )
   }
 
-  // ── Auth loading (first page load only — never block on background token refresh) ─
+  // ── Auth loading (first page load only) ──────────────────────────────────────
   if (loading && !workspaceReady) return <Spinner />
 
   // ── Not authenticated ─────────────────────────────────────────────────────────
@@ -74,26 +162,26 @@ function AppContent() {
     if (unauthPage === 'login') {
       return (
         <LoginPage
-          onBack={() => setUnauthPage('landing')}
-          onForgotPassword={() => setUnauthPage('forgot-password')}
+          onBack={() => navigateUnauth('landing')}
+          onForgotPassword={() => navigateUnauth('forgot-password')}
         />
       )
     }
     if (unauthPage === 'signup') {
       return (
         <SignupPage
-          onSwitchToLogin={() => setUnauthPage('login')}
-          onBack={() => setUnauthPage('landing')}
+          onSwitchToLogin={() => navigateUnauth('login')}
+          onBack={() => navigateUnauth('landing')}
         />
       )
     }
     if (unauthPage === 'forgot-password') {
-      return <ForgotPasswordPage onBack={() => setUnauthPage('login')} />
+      return <ForgotPasswordPage onBack={() => navigateUnauth('login')} />
     }
     return (
       <LandingPage
-        onSignIn={() => setUnauthPage('login')}
-        onSignUp={() => setUnauthPage('signup')}
+        onSignIn={() => navigateUnauth('login')}
+        onSignUp={() => navigateUnauth('signup')}
       />
     )
   }
@@ -104,7 +192,7 @@ function AppContent() {
     return <SuperAdminPage onNavigate={navigate} />
   }
 
-  // ── Workspace still loading after sign-in (first load only) ──────────────────
+  // ── Workspace still loading after sign-in ─────────────────────────────────────
   if (!workspace && !workspaceError && !workspaceReady) return <Spinner />
 
   // ── Workspace error ───────────────────────────────────────────────────────────
