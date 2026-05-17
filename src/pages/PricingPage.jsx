@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase.js'
 
 const ENTERPRISE_EMAIL      = 'info@catchquote.io'
 const PRO_PRICE_ID_MONTHLY  = import.meta.env.VITE_STRIPE_PRO_PRICE_ID
-const PRO_PRICE_ID_ANNUAL   = import.meta.env.VITE_STRIPE_PRO_PRICE_ID_ANNUAL
+const PRO_PRICE_ID_ANNUAL   = import.meta.env.VITE_STRIPE_PRO_ANNUAL_PRICE_ID
 
 const PRICING_TABLE = {
   SGD: { sym: 'S$',  proMo: 24.90, proYr: 249,  memMo: 10,   memYr: 100  },
@@ -77,7 +77,7 @@ export default function PricingPage({ onNavigate }) {
       'monthly:', PRO_PRICE_ID_MONTHLY, 'annual:', PRO_PRICE_ID_ANNUAL)
     if (!priceId) {
       setCheckoutError(
-        `Missing env var: ${isAnnual ? 'VITE_STRIPE_PRO_PRICE_ID_ANNUAL' : 'VITE_STRIPE_PRO_PRICE_ID'}`
+        `Missing env var: ${isAnnual ? 'VITE_STRIPE_PRO_ANNUAL_PRICE_ID' : 'VITE_STRIPE_PRO_PRICE_ID'}`
       )
       return
     }
