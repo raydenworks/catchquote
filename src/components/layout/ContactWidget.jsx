@@ -61,7 +61,7 @@ export default function ContactWidget() {
   }, [open])
 
   return (
-    <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 pointer-events-none">
 
       {/* ── Expanded panel ── */}
       <div
@@ -104,7 +104,7 @@ export default function ContactWidget() {
       <button
         onClick={() => setOpen(v => !v)}
         className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-200
-          hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-300"
+          hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-300 pointer-events-auto"
         style={{ backgroundColor: '#E8622A' }}
         aria-label={open ? 'Close contact options' : 'Open contact options'}
       >
