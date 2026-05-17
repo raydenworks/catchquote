@@ -22,7 +22,7 @@ export default function ForgotPasswordPage({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 pb-24">
       <button
         onClick={onBack}
         className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"

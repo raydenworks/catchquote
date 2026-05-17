@@ -23,7 +23,7 @@ export default function LoginPage({ onBack, onForgotPassword }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 pb-24">
       {onBack && (
         <button
           onClick={onBack}
