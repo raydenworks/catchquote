@@ -3,8 +3,9 @@ import Header from '../components/layout/Header.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 
-const ENTERPRISE_EMAIL = 'info@catchquote.io'
-const PRO_PRICE_ID     = import.meta.env.VITE_STRIPE_PRO_PRICE_ID
+const ENTERPRISE_EMAIL      = 'info@catchquote.io'
+const PRO_PRICE_ID_MONTHLY  = import.meta.env.VITE_STRIPE_PRO_PRICE_ID
+const PRO_PRICE_ID_ANNUAL   = import.meta.env.VITE_STRIPE_PRO_PRICE_ID_ANNUAL
 
 const PRICING_TABLE = {
   SGD: { sym: 'S$',  proMo: 24.90, proYr: 249,  memMo: 10,   memYr: 100  },
@@ -71,7 +72,8 @@ export default function PricingPage({ onNavigate }) {
   const memPrice = isAnnual ? p.memYr : p.memMo
 
   async function handleUpgrade() {
-    if (!PRO_PRICE_ID) {
+    const priceId = isAnnual ? PRO_PRICE_ID_ANNUAL : PRO_PRICE_ID_MONTHLY
+    if (!priceId) {
       setCheckoutError('Stripe is not configured yet. Contact support to upgrade.')
       return
     }
@@ -81,7 +83,7 @@ export default function PricingPage({ onNavigate }) {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           workspace_id: workspace.id,
-          price_id:     PRO_PRICE_ID,
+          price_id:     priceId,
           success_url:  `${window.location.origin}/?upgraded=true`,
           cancel_url:   `${window.location.origin}/`,
         },
