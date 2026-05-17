@@ -7,7 +7,7 @@ import {
 } from '@dnd-kit/sortable'
 import LineItemRow from './LineItemRow.jsx'
 
-function fmtAmt(n, currency = 'SGD') {
+function fmtAmt(n, currency = 'USD') {
   return `${currency} ${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 

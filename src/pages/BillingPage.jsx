@@ -92,7 +92,7 @@ export default function BillingPage({ onNavigate }) {
                 <p className="text-sm text-gray-400 mt-0.5">
                   {isTrial
                     ? `Up to ${TRIAL_QUOTE_LIMIT} quotes · single user · free`
-                    : '$99 / month SGD · unlimited quotes · team access'}
+                    : 'Pro plan · unlimited quotes · team access'}
                 </p>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function BillingPage({ onNavigate }) {
               onClick={() => onNavigate?.('pricing')}
               className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
-              Upgrade to Pro — $99/month SGD
+              Upgrade to Pro
             </button>
           </Section>
         )}

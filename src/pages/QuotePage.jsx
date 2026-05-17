@@ -20,7 +20,7 @@ function defaultMeta() {
     projectTitle:  '',
     date:          todayISO(),
     validUntil:    futureISO(30),
-    currency:      'SGD',
+    currency:      'USD',
     clientName:    '',
     clientEmail:   '',
     clientContact: '',
@@ -60,7 +60,7 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
       try {
         const { data, error } = await supabase
           .from('workspace_settings')
-          .select('company_name,company_logo_url,brand_colour,tagline,company_address,company_phone,company_email,company_registration,designer_name,designer_position,footer_message,terms_and_conditions,pdf_layout')
+          .select('company_name,company_logo_url,brand_colour,tagline,company_address,company_phone,company_email,company_registration,designer_name,designer_position,footer_message,terms_and_conditions,pdf_layout,default_currency')
           .eq('workspace_id', workspace.id)
           .maybeSingle()
         if (cancelled) return
@@ -71,10 +71,14 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
     return () => { cancelled = true }
   }, [workspace.id])
 
-  // ── Pre-fill designer name from settings ────────────────────────────────────
+  // ── Pre-fill designer name and workspace currency from settings ─────────────
   useEffect(() => {
-    if (wsSettings?.designer_name && !quoteId) {
-      setQuote(prev => ({ ...prev, designerName: prev.designerName || wsSettings.designer_name }))
+    if (!quoteId && wsSettings) {
+      setQuote(prev => ({
+        ...prev,
+        designerName: prev.designerName || wsSettings.designer_name || prev.designerName,
+        currency:     wsSettings.default_currency || prev.currency,
+      }))
     }
   }, [wsSettings, quoteId])
 
@@ -127,7 +131,7 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
             projectTitle:  q.project_name   || '',
             date:          q.quote_date     || q.created_at?.slice(0, 10) || todayISO(),
             validUntil:    q.valid_until    || futureISO(30),
-            currency:      q.currency       || 'SGD',
+            currency:      q.currency       || 'USD',
             clientName:    q.client_name    || '',
             clientEmail:   q.client_email   || '',
             clientContact: q.client_contact || '',

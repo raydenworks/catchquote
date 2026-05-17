@@ -1,4 +1,4 @@
-const CURRENCIES = ['SGD', 'USD', 'AUD', 'GBP', 'EUR', 'MYR']
+const CURRENCIES = ['SGD', 'USD', 'MYR', 'AUD', 'GBP', 'EUR', 'HKD']
 
 const cls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent'
 
@@ -80,13 +80,13 @@ export default function QuoteMetaForm({ quote, onChange, wsSettings }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Contact Number</label>
-              <input className={cls} placeholder="+65 9123 4567" {...f('clientContact')} />
+              <input className={cls} placeholder="+1 (555) 123-4567" {...f('clientContact')} />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Client Address</label>
-            <input className={cls} placeholder="123 Orchard Road, #01-01, Singapore 238858" {...f('clientAddress')} />
+            <input className={cls} placeholder="123 Main Street, City, Country" {...f('clientAddress')} />
           </div>
 
           <div>

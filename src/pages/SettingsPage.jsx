@@ -77,6 +77,7 @@ export default function SettingsPage({ onBack, onNavigate }) {
     designer_position:    '',
     footer_message:       'Thank you for your business.',
     pdf_layout:           'modern',
+    default_currency:     'USD',
   })
   const [tc, setTc] = useState('')
 
@@ -121,6 +122,7 @@ export default function SettingsPage({ onBack, onNavigate }) {
             designer_position:    data.designer_position    ?? '',
             footer_message:       data.footer_message       ?? 'Thank you for your business.',
             pdf_layout:           data.pdf_layout           ?? 'modern',
+            default_currency:     data.default_currency     ?? 'USD',
           })
           setTc(data.terms_and_conditions ?? '')
         }
@@ -343,15 +345,15 @@ export default function SettingsPage({ onBack, onNavigate }) {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Company Phone">
-                <input className={input} value={branding.company_phone} onChange={setBrand('company_phone')} placeholder="+65 9000 0000" />
+                <input className={input} value={branding.company_phone} onChange={setBrand('company_phone')} placeholder="+1 (555) 000-0000" />
               </Field>
               <Field label="Company Email">
-                <input type="email" className={input} value={branding.company_email} onChange={setBrand('company_email')} placeholder="info@company.com.sg" />
+                <input type="email" className={input} value={branding.company_email} onChange={setBrand('company_email')} placeholder="info@yourcompany.com" />
               </Field>
             </div>
 
             <Field label="Company Address">
-              <input className={input} value={branding.company_address} onChange={setBrand('company_address')} placeholder="1 Raffles Place, #01-01, Singapore 048616" />
+              <input className={input} value={branding.company_address} onChange={setBrand('company_address')} placeholder="123 Main Street, Suite 100" />
             </Field>
 
             <Field label="Company Registration Number" hint="UEN or other registration number">
@@ -409,6 +411,28 @@ export default function SettingsPage({ onBack, onNavigate }) {
             </div>
           </Section>
 
+          <Section title="Quote Defaults" description="Default settings applied to every new quote.">
+            <Field label="Default Currency" hint="Used for all new quotes. Individual quotes can override this.">
+              <select
+                className={input}
+                value={branding.default_currency}
+                onChange={setBrand('default_currency')}
+              >
+                {[
+                  { code: 'SGD', label: 'SGD — Singapore Dollar (S$)' },
+                  { code: 'USD', label: 'USD — US Dollar ($)'         },
+                  { code: 'MYR', label: 'MYR — Malaysian Ringgit (RM)'},
+                  { code: 'AUD', label: 'AUD — Australian Dollar (A$)'},
+                  { code: 'GBP', label: 'GBP — British Pound (£)'     },
+                  { code: 'EUR', label: 'EUR — Euro (€)'              },
+                  { code: 'HKD', label: 'HKD — Hong Kong Dollar (HK$)'},
+                ].map(({ code, label }) => (
+                  <option key={code} value={code}>{label}</option>
+                ))}
+              </select>
+            </Field>
+          </Section>
+
           <SaveBar saving={savingBrand} msg={brandMsg} label="Save Branding" disabled={anySaving && !savingBrand} />
         </form>
 
@@ -421,7 +445,7 @@ export default function SettingsPage({ onBack, onNavigate }) {
                 value={tc}
                 onChange={e => setTc(e.target.value)}
                 rows={12}
-                placeholder={"1. All prices are in SGD and include GST where applicable.\n2. A 30% deposit is required upon acceptance.\n3. This quote is valid for 30 days from the date issued.\n4. …"}
+                placeholder={"1. All prices are in the currency stated on this quote.\n2. A 30% deposit is required upon acceptance.\n3. This quote is valid for 30 days from the date issued.\n4. …"}
               />
               <p className="text-xs text-gray-400 mt-1.5 text-right">
                 {tc.length.toLocaleString()} characters

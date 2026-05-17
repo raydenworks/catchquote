@@ -14,17 +14,17 @@ function brandLight(b) {
 }
 
 function fmtAmt(n) {
-  return Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function fmtMoney(n, currency = 'SGD') {
+function fmtMoney(n, currency = 'USD') {
   return `${currency} ${fmtAmt(n)}`
 }
 
 function fmtDate(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
-  return isNaN(d) ? iso : d.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' })
+  return isNaN(d) ? iso : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 async function loadImageAsDataUrl(url) {
@@ -250,7 +250,7 @@ function drawPage1Classic(doc, settings, quote, BRAND, logoDataUrl, pageW) {
     ['QUOTE NO.',   quote.quoteNumber || '—'],
     ['DATE',        fmtDate(quote.date)],
     ['VALID UNTIL', fmtDate(quote.validUntil)],
-    ['CURRENCY',    quote.currency || 'SGD'],
+    ['CURRENCY',    quote.currency || 'USD'],
   ]) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(7)
@@ -329,7 +329,7 @@ function drawPage1Modern(doc, settings, quote, BRAND, logoDataUrl, pageW) {
     ['QUOTE NO.',   quote.quoteNumber || '—'],
     ['DATE',        fmtDate(quote.date)],
     ['VALID UNTIL', fmtDate(quote.validUntil)],
-    ['CURRENCY',    quote.currency || 'SGD'],
+    ['CURRENCY',    quote.currency || 'USD'],
   ]) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(7)
@@ -409,7 +409,7 @@ function drawClientBlock(doc, quote, settings, y, pageW) {
 // ── Summary section (page 1: summary table + totals) ──────────────────────────
 
 function drawSummary(doc, areas, areaSubtotals, itemsByArea, subtotal, gst, gstEnabled, total, quote, settings, BRAND, layout, pageW, startY) {
-  const cur = quote.currency || 'SGD'
+  const cur = quote.currency || 'USD'
   let y = startY
 
   // Section title
@@ -662,7 +662,7 @@ export async function exportQuotePDF({
 }) {
   const layout   = (settings?.pdf_layout || 'modern').toLowerCase()
   const BRAND    = hexToRgb(settings?.brand_colour || '#E8622A')
-  const currency = quote.currency || 'SGD'
+  const currency = quote.currency || 'USD'
   const pageW    = 210
   const pageH    = 297
 

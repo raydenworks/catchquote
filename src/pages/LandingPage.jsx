@@ -3,12 +3,30 @@ import { useState, useEffect } from 'react'
 const CONTACT_EMAIL = 'info@catchquote.io'
 const CONTACT       = `mailto:${CONTACT_EMAIL}`
 
-/* ─── Shared components ─────────────────────────────────────── */
-
 const LONG_LOGO  = "https://ljognnvocvcqnsfjskpo.supabase.co/storage/v1/object/public/Catchquote's%20logo/logo/long%20logo%20transparent%20bg.png"
 const SQUARE_LOGO = "https://ljognnvocvcqnsfjskpo.supabase.co/storage/v1/object/public/Catchquote's%20logo/logo/logo%20transparent%20bg.png"
 
-function Logo({ light = false }) {
+/* ─── Pricing data (landing page section) ───────────────────── */
+
+const PRICING_TABLE = {
+  SGD: { sym: 'S$',  proMo: 24.90 },
+  USD: { sym: '$',   proMo: 18.90 },
+  MYR: { sym: 'RM',  proMo: 87    },
+  AUD: { sym: 'A$',  proMo: 29    },
+  GBP: { sym: '£',   proMo: 14.90 },
+  EUR: { sym: '€',   proMo: 17.50 },
+  HKD: { sym: 'HK$', proMo: 148   },
+}
+const PRICING_CURRENCIES = ['SGD', 'USD', 'MYR', 'AUD', 'GBP', 'EUR', 'HKD']
+
+function fmtLandingPrice(sym, amount) {
+  const n = Number.isInteger(amount) ? amount.toLocaleString() : amount.toFixed(2)
+  return `${sym}${n}`
+}
+
+/* ─── Shared components ─────────────────────────────────────── */
+
+function Logo() {
   return <img src={LONG_LOGO} alt="CatchQuote" className="h-12 w-auto" />
 }
 
@@ -42,7 +60,7 @@ function QuoteMockup() {
         <div className="flex justify-between items-start">
           <div>
             <div className="font-bold text-sm text-gray-900">QT-2025-0042</div>
-            <div className="text-xs text-gray-400 mt-0.5">Chan Residence · 8 Tampines Ave</div>
+            <div className="text-xs text-gray-400 mt-0.5">Parker Residence · 8 Riverside Dr</div>
           </div>
           <div className="text-right">
             <div className="text-[10px] uppercase tracking-wide text-gray-400">Valid Until</div>
@@ -55,10 +73,9 @@ function QuoteMockup() {
       <div className="px-3 pt-3 pb-1">
         <div className="flex justify-between items-center bg-brand-600 text-white text-xs font-semibold px-3 py-2 rounded-lg mb-2">
           <span>Living Room</span>
-          <span className="tabular-nums">SGD 5,515</span>
+          <span className="tabular-nums">$5,515</span>
         </div>
         <div className="pl-1 space-y-0">
-          {/* Column headers */}
           <div className="grid text-[10px] text-gray-400 uppercase tracking-wide pb-1" style={{gridTemplateColumns:'1fr 32px 28px 52px 52px'}}>
             <span>Description</span><span className="text-center">Unit</span><span className="text-right">Qty</span><span className="text-right">Price</span><span className="text-right">Total</span>
           </div>
@@ -77,7 +94,7 @@ function QuoteMockup() {
           ))}
           <div className="flex justify-end text-[11px] pt-1.5">
             <span className="text-gray-400 mr-1.5">Subtotal:</span>
-            <span className="font-semibold text-gray-700 tabular-nums">SGD 5,515</span>
+            <span className="font-semibold text-gray-700 tabular-nums">$5,515</span>
           </div>
         </div>
       </div>
@@ -86,7 +103,7 @@ function QuoteMockup() {
       <div className="px-3 pt-2 pb-1">
         <div className="flex justify-between items-center bg-brand-600 text-white text-xs font-semibold px-3 py-2 rounded-lg mb-2">
           <span>Master Bedroom</span>
-          <span className="tabular-nums">SGD 2,340</span>
+          <span className="tabular-nums">$2,340</span>
         </div>
         <div className="pl-1">
           {[
@@ -103,7 +120,7 @@ function QuoteMockup() {
           ))}
           <div className="flex justify-end text-[11px] pt-1.5">
             <span className="text-gray-400 mr-1.5">Subtotal:</span>
-            <span className="font-semibold text-gray-700 tabular-nums">SGD 2,340</span>
+            <span className="font-semibold text-gray-700 tabular-nums">$2,340</span>
           </div>
         </div>
       </div>
@@ -111,14 +128,14 @@ function QuoteMockup() {
       {/* Totals */}
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 mt-2">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>Subtotal</span><span className="tabular-nums">SGD 7,855</span>
+          <span>Subtotal</span><span className="tabular-nums">$7,855</span>
         </div>
         <div className="flex justify-between text-xs text-gray-500 mb-2.5">
-          <span>GST (9%)</span><span className="tabular-nums">SGD 707</span>
+          <span>Tax (9%)</span><span className="tabular-nums">$707</span>
         </div>
         <div className="flex justify-between items-center border-t border-gray-200 pt-2.5">
           <span className="font-bold text-sm text-gray-900">Total</span>
-          <span className="font-extrabold text-xl text-brand-600 tabular-nums">SGD 8,562</span>
+          <span className="font-extrabold text-xl text-brand-600 tabular-nums">$8,562</span>
         </div>
       </div>
     </div>
@@ -217,7 +234,6 @@ function PresetTableMockup() {
         </div>
       </div>
 
-      {/* Table header */}
       <div className="grid px-4 py-2 bg-gray-50 border-b border-gray-100" style={{gridTemplateColumns:'90px 1fr 56px 44px 52px'}}>
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Category</span>
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Description</span>
@@ -255,9 +271,7 @@ function PresetTableMockup() {
 function PhoneMockup() {
   return (
     <div className="relative mx-auto" style={{width: 224, height: 448}}>
-      {/* Body */}
       <div className="absolute inset-0 bg-gray-900 rounded-[2.75rem] shadow-2xl"/>
-      {/* Screen */}
       <div className="absolute bg-white overflow-hidden" style={{inset: 10, borderRadius: '2.25rem'}}>
         {/* Status bar */}
         <div className="flex items-center justify-between px-5 pt-3 pb-1 bg-white">
@@ -280,9 +294,7 @@ function PhoneMockup() {
 
         {/* App header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-white">
-          <div className="flex items-center">
-            <img src={LONG_LOGO} alt="CatchQuote" className="h-3.5 w-auto" />
-          </div>
+          <img src={LONG_LOGO} alt="CatchQuote" className="h-3.5 w-auto" />
           <div className="w-6 h-6 bg-brand-600 rounded-full flex items-center justify-center">
             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -293,21 +305,21 @@ function PhoneMockup() {
         {/* Quote meta */}
         <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
           <div className="text-[10px] font-bold text-gray-900">QT-2025-0042</div>
-          <div className="text-[9px] text-gray-400 mt-0.5">Chan Residence · Tampines</div>
+          <div className="text-[9px] text-gray-400 mt-0.5">Parker Residence</div>
         </div>
 
         {/* Area header */}
         <div className="mx-3 mt-2.5 bg-brand-600 rounded-lg px-2.5 py-2 flex justify-between items-center">
           <span className="text-[10px] font-semibold text-white">Living Room</span>
-          <span className="text-[9px] text-brand-200 tabular-nums">SGD 5,515</span>
+          <span className="text-[9px] text-brand-200 tabular-nums">$5,515</span>
         </div>
 
         {/* Items */}
         <div className="px-3 mt-2 space-y-1.5">
           {[
-            ['Vinyl plank flooring', 'm²',  'SGD 3,375'],
-            ['Feature wall paint',   'm²',  'SGD 1,900'],
-            ['Power points',         'unit','SGD 240'],
+            ['Vinyl plank flooring', 'm²',  '$3,375'],
+            ['Feature wall paint',   'm²',  '$1,900'],
+            ['Power points',         'unit','$240'],
           ].map(([d, u, t]) => (
             <div key={d} className="flex items-center border-b border-gray-50 pb-1">
               <span className="text-[9px] text-gray-600 flex-1 truncate">{d}</span>
@@ -320,8 +332,8 @@ function PhoneMockup() {
         {/* Bottom totals + CTA */}
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-2.5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[9px] text-gray-500">Total (inc. GST)</span>
-            <span className="text-[13px] font-extrabold text-brand-600 tabular-nums">SGD 8,562</span>
+            <span className="text-[9px] text-gray-500">Total (inc. Tax)</span>
+            <span className="text-[13px] font-extrabold text-brand-600 tabular-nums">$8,562</span>
           </div>
           <div className="bg-brand-600 rounded-xl py-2 text-center">
             <span className="text-[10px] font-bold text-white tracking-wide">Export PDF</span>
@@ -334,7 +346,6 @@ function PhoneMockup() {
       <div className="absolute bg-gray-700 rounded-l-sm" style={{top:110,left:-3,width:3,height:20}}/>
       <div className="absolute bg-gray-700 rounded-l-sm" style={{top:136,left:-3,width:3,height:20}}/>
       <div className="absolute bg-gray-700 rounded-r-sm" style={{top:88,right:-3,width:3,height:36}}/>
-      {/* Home bar */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/40 rounded-full" style={{width:64,height:4}}/>
     </div>
   )
@@ -343,13 +354,16 @@ function PhoneMockup() {
 /* ─── Main Landing Page ─────────────────────────────────────── */
 
 export default function LandingPage({ onSignIn, onSignUp }) {
-  const [scrolled, setScrolled] = useState(false)
+  const [scrolled,        setScrolled]        = useState(false)
+  const [pricingCurrency, setPricingCurrency] = useState('SGD')
 
   useEffect(() => {
     const handle = () => setScrolled(window.scrollY > 24)
     window.addEventListener('scroll', handle, { passive: true })
     return () => window.removeEventListener('scroll', handle)
   }, [])
+
+  const p = PRICING_TABLE[pricingCurrency]
 
   return (
     <div className="min-h-screen bg-white font-sans">
@@ -381,14 +395,14 @@ export default function LandingPage({ onSignIn, onSignUp }) {
           <div>
             <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-brand-100">
               <span className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse"/>
-              Built for Singapore interior designers
+              Built for interior designers and contractors worldwide
             </div>
             <h1 className="font-serif text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] mb-6">
               Quote Faster.<br />Win More.<br />
               <span className="text-brand-600">Protect Your Margins.</span>
             </h1>
             <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-lg">
-              The quotation tool built for Singapore interior designers — preset your rates, drag to build, send professional PDFs in minutes.
+              The quotation tool built for interior designers and contractors — quote live, close on the spot, anywhere in the world.
             </p>
             <div className="flex flex-wrap gap-3">
               <button
@@ -448,7 +462,7 @@ export default function LandingPage({ onSignIn, onSignUp }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                   </svg>
                 ),
-                title: 'Excel quotes look unprofessional',
+                title: 'Spreadsheet quotes look unprofessional',
                 body: "Clients compare your messy spreadsheet against a competitor's branded PDF. First impressions lose deals before the project even starts.",
               },
             ].map(({ icon, title, body }) => (
@@ -537,7 +551,7 @@ export default function LandingPage({ onSignIn, onSignUp }) {
             <div className="space-y-5">
               {[
                 ['Works on iPhone, iPad, any device', 'Fully responsive — no app download required. Open a browser and go.'],
-                ['No laptop needed on site visits', 'Build and adjust quotes while walking the client through their future home.'],
+                ['No laptop needed on site visits', 'Build and adjust quotes while walking the client through their future space.'],
                 ['Professional PDF in one tap', 'Generate and share the quote before you even leave the property.'],
                 ['Impress clients on the spot', 'Real-time quoting shows confidence. Clients love seeing numbers build live.'],
               ].map(([title, detail]) => (
@@ -613,10 +627,10 @@ export default function LandingPage({ onSignIn, onSignUp }) {
                   <span>{role}</span>
                 </div>
                 <ul className="space-y-2.5">
-                  {perms.map(p => (
-                    <li key={p} className="flex items-start gap-2 text-sm text-gray-600">
+                  {perms.map(perm => (
+                    <li key={perm} className="flex items-start gap-2 text-sm text-gray-600">
                       <Check />
-                      <span>{p}</span>
+                      <span>{perm}</span>
                     </li>
                   ))}
                 </ul>
@@ -629,10 +643,28 @@ export default function LandingPage({ onSignIn, onSignUp }) {
       {/* ── Pricing ─────────────────────────────────────────── */}
       <section className="py-20 px-6" id="pricing">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-extrabold text-gray-900 mb-3">Simple, Transparent Pricing</h2>
             <p className="text-gray-500">Start free. Scale when you're ready.</p>
           </div>
+
+          {/* Currency toggle */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm flex-wrap justify-center">
+              {PRICING_CURRENCIES.map(cur => (
+                <button
+                  key={cur}
+                  onClick={() => setPricingCurrency(cur)}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
+                    pricingCurrency === cur ? 'bg-brand-600 text-white' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {cur}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-3 gap-6 items-start">
 
             {/* Trial */}
@@ -669,10 +701,10 @@ export default function LandingPage({ onSignIn, onSignUp }) {
               <div className="mb-6">
                 <div className="text-sm font-semibold text-brand-700 mb-1">Pro</div>
                 <div className="flex items-end gap-2">
-                  <span className="text-4xl font-extrabold text-gray-900">$99</span>
-                  <span className="text-gray-400 mb-1">/month SGD</span>
+                  <span className="text-4xl font-extrabold text-gray-900">{fmtLandingPrice(p.sym, p.proMo)}</span>
+                  <span className="text-gray-400 mb-1">/month</span>
                 </div>
-                <div className="text-sm text-gray-500 mt-1">+$25/user for additional members</div>
+                <div className="text-sm text-gray-500 mt-1">Per workspace · billed monthly</div>
               </div>
               <ul className="space-y-3 mb-8">
                 {[
@@ -732,7 +764,10 @@ export default function LandingPage({ onSignIn, onSignUp }) {
 
           </div>
 
-          <p className="text-center text-sm text-gray-400 mt-8">
+          <p className="text-center text-xs text-gray-400 mt-6">
+            All payments processed in SGD via Stripe.
+          </p>
+          <p className="text-center text-sm text-gray-400 mt-3">
             Enterprise enquiries:{' '}
             <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline font-medium">{CONTACT_EMAIL}</a>
           </p>
@@ -746,7 +781,7 @@ export default function LandingPage({ onSignIn, onSignUp }) {
             Ready to transform<br />how you quote?
           </h2>
           <p className="text-brand-100 mb-10 text-lg">
-            Join Singapore ID firms already saving hours every week.
+            Join interior designers and contractors worldwide already saving hours every week.
           </p>
           <button
             onClick={onSignUp}
@@ -769,7 +804,7 @@ export default function LandingPage({ onSignIn, onSignUp }) {
               <img src={SQUARE_LOGO} alt="CatchQuote" className="h-7 w-auto" />
               <span className="font-bold text-white text-lg">CatchQuote</span>
             </div>
-            <p className="text-sm text-gray-500">The quotation tool for Singapore ID firms.</p>
+            <p className="text-sm text-gray-500">The quotation tool for interior designers worldwide.</p>
           </div>
           <div className="flex items-center gap-6 text-sm">
             <button onClick={onSignIn} className="hover:text-white transition-colors">Sign In</button>
@@ -778,7 +813,7 @@ export default function LandingPage({ onSignIn, onSignUp }) {
           </div>
         </div>
         <div className="max-w-5xl mx-auto mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-600">
-          © 2026 CatchQuote. Built for Singapore ID firms.
+          © 2026 CatchQuote · Built for interior designers worldwide.
         </div>
       </footer>
 

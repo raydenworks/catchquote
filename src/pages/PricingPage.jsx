@@ -6,9 +6,27 @@ import { supabase } from '../lib/supabase.js'
 const ENTERPRISE_EMAIL = 'info@catchquote.io'
 const PRO_PRICE_ID     = import.meta.env.VITE_STRIPE_PRO_PRICE_ID
 
-function CheckIcon() {
+const PRICING_TABLE = {
+  SGD: { sym: 'S$',  proMo: 24.90, proYr: 249,  memMo: 10,   memYr: 100  },
+  USD: { sym: '$',   proMo: 18.90, proYr: 189,  memMo: 7.50, memYr: 75   },
+  MYR: { sym: 'RM',  proMo: 87,   proYr: 870,  memMo: 35,   memYr: 350  },
+  AUD: { sym: 'A$',  proMo: 29,   proYr: 290,  memMo: 12,   memYr: 120  },
+  GBP: { sym: '£',   proMo: 14.90, proYr: 149,  memMo: 6,    memYr: 60   },
+  EUR: { sym: '€',   proMo: 17.50, proYr: 175,  memMo: 7,    memYr: 70   },
+  HKD: { sym: 'HK$', proMo: 148,  proYr: 1480, memMo: 59,   memYr: 590  },
+}
+const CURRENCIES = ['SGD', 'USD', 'MYR', 'AUD', 'GBP', 'EUR', 'HKD']
+
+function fmtPrice(sym, amount) {
+  const n = Number.isInteger(amount)
+    ? amount.toLocaleString()
+    : amount.toFixed(2)
+  return `${sym}${n}`
+}
+
+function CheckIcon({ dark = false }) {
   return (
-    <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+    <svg className={`w-4 h-4 shrink-0 ${dark ? 'text-brand-400' : 'text-green-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
     </svg>
   )
@@ -26,7 +44,6 @@ const PRO_FEATURES = [
   'PDF export',
   'Preset library',
   'Up to 3 team members',
-  'Additional members at $25/user/mo',
   'Priority email support',
   'Custom workspace branding (coming soon)',
   'Client portal & e-signature (coming soon)',
@@ -45,6 +62,13 @@ export default function PricingPage({ onNavigate }) {
   const { isTrial, workspace } = useAuth()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError,   setCheckoutError]   = useState('')
+  const [billing,         setBilling]         = useState('monthly')
+  const [currency,        setCurrency]        = useState('SGD')
+
+  const p        = PRICING_TABLE[currency]
+  const isAnnual = billing === 'annual'
+  const proPrice = isAnnual ? p.proYr : p.proMo
+  const memPrice = isAnnual ? p.memYr : p.memMo
 
   async function handleUpgrade() {
     if (!PRO_PRICE_ID) {
@@ -79,15 +103,61 @@ export default function PricingPage({ onNavigate }) {
       <Header onNavigate={onNavigate} />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Simple, honest pricing</h1>
           <p className="text-gray-500 text-base max-w-lg mx-auto">
             Start free, upgrade when you're ready. No hidden fees, no lock-in contracts.
           </p>
         </div>
 
+        {/* ── Toggles ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+
+          {/* Billing cycle toggle */}
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={() => setBilling('monthly')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                billing === 'monthly' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBilling('annual')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                billing === 'annual' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              Annual
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                billing === 'annual' ? 'bg-green-400 text-white' : 'bg-green-100 text-green-700'
+              }`}>
+                2 months free
+              </span>
+            </button>
+          </div>
+
+          {/* Currency toggle */}
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm flex-wrap justify-center">
+            {CURRENCIES.map(cur => (
+              <button
+                key={cur}
+                onClick={() => setCurrency(cur)}
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
+                  currency === cur ? 'bg-brand-600 text-white' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                {cur}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Cards ── */}
         <div className="grid sm:grid-cols-3 gap-6">
-          {/* Trial card */}
+
+          {/* Trial */}
           <div className={`bg-white rounded-2xl border p-7 flex flex-col ${!isTrial ? 'border-gray-200 opacity-80' : 'border-yellow-300 ring-2 ring-yellow-200'}`}>
             <div className="flex items-center justify-between mb-1">
               <p className="font-bold text-gray-900 text-lg">Trial</p>
@@ -116,7 +186,7 @@ export default function PricingPage({ onNavigate }) {
             </button>
           </div>
 
-          {/* Pro card */}
+          {/* Pro */}
           <div className={`rounded-2xl border p-7 flex flex-col ${isTrial ? 'bg-white border-brand-300 ring-2 ring-brand-200' : 'bg-white border-green-300 ring-2 ring-green-200'}`}>
             <div className="flex items-center justify-between mb-1">
               <p className="font-bold text-gray-900 text-lg">Pro</p>
@@ -126,11 +196,14 @@ export default function PricingPage({ onNavigate }) {
                 </span>
               )}
             </div>
-            <div className="flex items-end gap-1 mb-1">
-              <p className="text-3xl font-bold text-gray-900">$99</p>
-              <p className="text-gray-500 text-sm mb-1">/month</p>
+            <div className="flex items-end gap-1 mb-0.5">
+              <p className="text-3xl font-bold text-gray-900">{fmtPrice(p.sym, proPrice)}</p>
+              <p className="text-gray-500 text-sm mb-1">/{isAnnual ? 'year' : 'month'}</p>
             </div>
-            <p className="text-sm text-gray-500 mb-6">Per workspace · SGD · billed monthly</p>
+            <p className="text-sm text-gray-500 mb-1">Per workspace · billed {billing}</p>
+            <p className="text-xs text-gray-400 mb-6">
+              +{fmtPrice(p.sym, memPrice)}/user for additional members
+            </p>
 
             <ul className="space-y-3 mb-8 flex-1">
               {PRO_FEATURES.map(f => (
@@ -163,7 +236,7 @@ export default function PricingPage({ onNavigate }) {
             )}
           </div>
 
-          {/* Enterprise card */}
+          {/* Enterprise */}
           <div className="bg-gray-900 rounded-2xl border border-gray-700 p-7 flex flex-col">
             <div className="mb-1">
               <p className="font-bold text-white text-lg">Enterprise</p>
@@ -174,10 +247,7 @@ export default function PricingPage({ onNavigate }) {
             <ul className="space-y-3 mb-8 flex-1">
               {ENTERPRISE_FEATURES.map(f => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
-                  <svg className="w-4 h-4 text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  {f}
+                  <CheckIcon dark />{f}
                 </li>
               ))}
             </ul>
@@ -191,8 +261,10 @@ export default function PricingPage({ onNavigate }) {
           </div>
         </div>
 
-        {/* Contact note */}
-        <p className="text-center text-sm text-gray-400 mt-8">
+        <p className="text-center text-xs text-gray-400 mt-6">
+          All payments processed in SGD via Stripe.
+        </p>
+        <p className="text-center text-sm text-gray-400 mt-3">
           Questions? Email us at{' '}
           <a href={`mailto:${ENTERPRISE_EMAIL}`} className="text-brand-600 hover:text-brand-700 font-medium">
             {ENTERPRISE_EMAIL}

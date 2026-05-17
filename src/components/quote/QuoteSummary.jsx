@@ -1,14 +1,14 @@
 import { GST_RATE } from '../../hooks/useQuote.js'
 
-function fmt(n, currency = 'SGD') {
-  return `${currency} ${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+function fmt(n, currency = 'USD') {
+  return `${currency} ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export default function QuoteSummary({
   subtotal, gst, gstEnabled, total, currency,
   onToggleGst, onExportPDF, exporting, onSaveQuote, saving,
 }) {
-  const cur = currency || 'SGD'
+  const cur = currency || 'USD'
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 mt-4">
