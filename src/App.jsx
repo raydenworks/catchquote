@@ -14,6 +14,7 @@ import LandingPage from './pages/LandingPage.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 import ContactWidget from './components/layout/ContactWidget.jsx'
+import HelpFooter from './components/layout/HelpFooter.jsx'
 
 // ── URL ↔ page-state mapping tables ─────────────────────────────────────────
 const AUTH_PAGE_PATHS = {
@@ -203,7 +204,7 @@ function AppContent() {
 
   // ── Super admin: bypass workspace requirement entirely ─────────────────────────
   if (isSuperAdmin) {
-    if (page === 'pricing') return <><PricingPage onNavigate={navigate} /><ContactWidget /></>
+    if (page === 'pricing') return <PricingPage onNavigate={navigate} />
     return <SuperAdminPage onNavigate={navigate} />
   }
 
@@ -288,7 +289,7 @@ function AppContent() {
     )
   }
 
-  return <>{pageContent}<ContactWidget /></>
+  return <>{pageContent}<HelpFooter /></>
 }
 
 export default function App() {

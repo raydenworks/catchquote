@@ -59,7 +59,7 @@ export default function BillingPage({ onNavigate }) {
     <div className="min-h-screen bg-gray-50">
       <Header onNavigate={onNavigate} />
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16">
         <div className="mb-8">
           <h1 className="text-xl font-bold text-gray-900">Billing</h1>
           <p className="text-sm text-gray-400 mt-0.5">Manage your plan and subscription.</p>

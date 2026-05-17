@@ -102,7 +102,7 @@ export default function PricingPage({ onNavigate }) {
     <div className="min-h-screen bg-gray-50">
       <Header onNavigate={onNavigate} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16 pb-20">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Simple, honest pricing</h1>
           <p className="text-gray-500 text-base max-w-lg mx-auto">

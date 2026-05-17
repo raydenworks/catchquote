@@ -338,7 +338,7 @@ export default function PresetsPage({ onBack, onNavigate }) {
     <div className="min-h-screen bg-gray-50">
       <Header onBack={onBack} onNavigate={onNavigate} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-16">
 
         {/* Page header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">

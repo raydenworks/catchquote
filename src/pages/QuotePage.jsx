@@ -339,7 +339,7 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
     <div className="min-h-screen bg-gray-50">
       <Header onBack={onBack} onNavigate={onNavigate} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-16">
 
         {/* Title bar */}
         <div className="flex flex-wrap items-start justify-between gap-3 mb-6">

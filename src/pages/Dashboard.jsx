@@ -72,7 +72,7 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
     <div className="min-h-screen bg-gray-50">
       <Header onNavigate={onNavigate} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 pb-16">
         {/* Upgrade success banner */}
         {upgraded && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-xl px-5 py-4 flex items-center justify-between gap-3">

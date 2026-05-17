@@ -155,7 +155,7 @@ export default function TeamPage({ onBack, onNavigate }) {
     <div className="min-h-screen bg-gray-50">
       <Header onBack={onBack} onNavigate={onNavigate} />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-16">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Team</h1>
           <p className="text-sm text-gray-500 mt-1">{workspace.name}</p>
