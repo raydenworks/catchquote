@@ -380,16 +380,42 @@ export default function SettingsPage({ onBack, onNavigate }) {
             <div className="grid sm:grid-cols-2 gap-4">
               {[
                 {
-                  value: 'modern',
-                  label: 'Modern',
-                  desc: 'Full brand colour header, light section bands, alternating row shading.',
+                  value:   'modern',
+                  label:   'Modern',
+                  desc:    'Full brand colour header, light section bands, alternating row shading.',
+                  swatches: ['#E8622A', '#f3f4f8', '#ffffff'],
                 },
                 {
-                  value: 'classic',
-                  label: 'Classic',
-                  desc: 'Clean white background, brand colour accents only on headers and totals.',
+                  value:   'classic',
+                  label:   'Classic',
+                  desc:    'Clean white background, brand colour accents only on headers and totals.',
+                  swatches: ['#E8622A', '#ffffff', '#f5f7fa'],
                 },
-              ].map(({ value, label, desc }) => {
+                {
+                  value:   'bw',
+                  label:   'B&W Minimalist',
+                  desc:    'Pure black and white, no colour — bold typography and generous whitespace.',
+                  swatches: ['#000000', '#f9f9f9', '#ffffff'],
+                },
+                {
+                  value:   'dark',
+                  label:   'Dark Mode',
+                  desc:    'Near-black background, white text, orange grand total accent — premium dark feel.',
+                  swatches: ['#0D0D0D', '#1A1A1A', '#E8622A'],
+                },
+                {
+                  value:   'warm',
+                  label:   'Warm Luxury',
+                  desc:    'Ivory background, warm brown text, gold accents — high-end residential feel.',
+                  swatches: ['#FDFAF5', '#C9A96E', '#2C1810'],
+                },
+                {
+                  value:   'editorial',
+                  label:   'Editorial',
+                  desc:    'Bold magazine-style layout, oversized typography, strong orange accents.',
+                  swatches: ['#ffffff', '#E8622A', '#000000'],
+                },
+              ].map(({ value, label, desc, swatches }) => {
                 const selected = branding.pdf_layout === value
                 return (
                   <button
@@ -403,6 +429,11 @@ export default function SettingsPage({ onBack, onNavigate }) {
                         {selected && <div className="w-2 h-2 rounded-full bg-brand-600"/>}
                       </div>
                       <span className={`text-sm font-semibold ${selected ? 'text-brand-700' : 'text-gray-700'}`}>{label}</span>
+                      <div className="flex gap-1 ml-auto">
+                        {swatches.map((c, i) => (
+                          <div key={i} className="w-3.5 h-3.5 rounded-full border border-gray-200 shrink-0" style={{ backgroundColor: c }} />
+                        ))}
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500 leading-relaxed pl-6">{desc}</p>
                   </button>
