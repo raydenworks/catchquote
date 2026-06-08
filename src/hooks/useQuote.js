@@ -71,10 +71,10 @@ export function useQuote() {
   }, [])
 
   // Called when loading an existing quote from DB
-  const resetAll = useCallback((newAreas, newItems) => {
+  const resetAll = useCallback((newAreas, newItems, gstOn = true) => {
     setAreas(newAreas)
     setItems(newItems)
-    setGstEnabled(true)
+    setGstEnabled(gstOn)
   }, [])
 
   // ── Derived state ──────────────────────────────────────────────────────────

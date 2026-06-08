@@ -157,7 +157,7 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
             qty:         item.quantity      ?? 1,
             unitPrice:   item.unit_price    ?? 0,
           }))
-          resetAll(areaOrder, mapped)
+          resetAll(areaOrder, mapped, q.gst_enabled ?? true)
         }
       } catch (err) {
         if (!cancelled) setLoadError(err.message || 'Failed to load quote.')
@@ -262,6 +262,7 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
         currency:       quote.currency,
         designer_name:  quote.designerName,
         notes:          quote.notes,
+        gst_enabled:    gstEnabled,
         subtotal,
         gst:            gstEnabled ? gst : 0,
         total,
