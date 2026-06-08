@@ -1,15 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Header from '../components/layout/Header.jsx'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { TRIAL_QUOTE_LIMIT } from '../context/AuthContext.jsx'
 
-const STATUS_STYLES = {
+export const STATUS_STYLES = {
   draft:    'bg-gray-100 text-gray-500',
   sent:     'bg-blue-50 text-blue-600',
   accepted: 'bg-green-50 text-green-600',
+  rejected: 'bg-red-50 text-red-500',
   declined: 'bg-red-50 text-red-500',
+  expired:  'bg-orange-50 text-orange-500',
 }
+
+const STATUS_DOT = {
+  draft:    'bg-gray-400',
+  sent:     'bg-blue-500',
+  accepted: 'bg-green-500',
+  rejected: 'bg-red-500',
+  declined: 'bg-red-500',
+  expired:  'bg-orange-400',
+}
+
+const TRANSITIONS = {
+  draft:    ['sent', 'expired'],
+  sent:     ['accepted', 'rejected', 'expired'],
+  accepted: ['draft'],
+  rejected: ['draft'],
+  declined: ['draft'],
+  expired:  ['draft'],
+}
+
+const FILTER_LABELS = ['all', 'draft', 'sent', 'accepted', 'rejected', 'expired']
 
 function fmt(n) {
   return `$${Number(n).toLocaleString('en-AU', { minimumFractionDigits: 0 })}`
@@ -19,12 +41,79 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Draft'
 }
 
+// ── Inline status changer ─────────────────────────────────────────────────────
+
+function StatusChanger({ quoteId, status, onChanged }) {
+  const [open,     setOpen]     = useState(false)
+  const [changing, setChanging] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [open])
+
+  const next = TRANSITIONS[status] ?? []
+
+  async function change(newStatus) {
+    setChanging(true)
+    setOpen(false)
+    const update = { status: newStatus }
+    if (newStatus === 'sent')     update.sent_at     = new Date().toISOString()
+    if (newStatus === 'accepted') update.accepted_at = new Date().toISOString()
+    if (newStatus === 'draft')  { update.sent_at = null; update.accepted_at = null }
+    await supabase.from('quotes').update(update).eq('id', quoteId)
+    setChanging(false)
+    onChanged(quoteId, newStatus)
+  }
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        onClick={e => { e.stopPropagation(); if (next.length && !changing) setOpen(v => !v) }}
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full transition-opacity ${
+          STATUS_STYLES[status] || STATUS_STYLES.draft
+        } ${next.length ? 'cursor-pointer hover:opacity-75' : 'cursor-default'}`}
+      >
+        {changing ? '…' : capitalize(status)}
+        {next.length > 0 && !changing && (
+          <svg className="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[140px]">
+          {next.map(s => (
+            <button
+              key={s}
+              onClick={e => { e.stopPropagation(); change(s) }}
+              className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s] ?? 'bg-gray-400'}`} />
+              {capitalize(s)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
 export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, onDismissUpgraded }) {
   const { user, workspace, role, isTrial } = useAuth()
   const [quotes,      setQuotes]      = useState([])
   const [loading,     setLoading]     = useState(true)
   const [loadError,   setLoadError]   = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
+  const [filter,      setFilter]      = useState('all')
 
   useEffect(() => {
     let cancelled = false
@@ -40,16 +129,29 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
 
     async function loadQuotes() {
       try {
-        // RLS handles role filtering: admin sees all workspace quotes,
-        // sales_designer sees only quotes where created_by = auth.uid()
         const { data, error } = await supabase
           .from('quotes')
-          .select('id, quote_number, project_name, client_name, created_at, total, status, created_by')
+          .select('id, quote_number, project_name, client_name, created_at, total, status, created_by, valid_until, accepted_at, sent_at')
           .eq('workspace_id', workspace.id)
           .order('created_at', { ascending: false })
         if (cancelled) return
         if (error) throw error
-        setQuotes(data || [])
+
+        // Auto-expire: mark draft/sent quotes whose valid_until has passed
+        const today    = new Date().toISOString().slice(0, 10)
+        const toExpire = (data || []).filter(q =>
+          ['draft', 'sent'].includes(q.status) &&
+          q.valid_until &&
+          q.valid_until < today
+        )
+        let finalData = data || []
+        if (toExpire.length > 0) {
+          const ids = toExpire.map(q => q.id)
+          await supabase.from('quotes').update({ status: 'expired' }).in('id', ids)
+          finalData = finalData.map(q => ids.includes(q.id) ? { ...q, status: 'expired' } : q)
+        }
+
+        if (!cancelled) setQuotes(finalData)
       } catch (err) {
         if (!cancelled) setLoadError(err.message || 'Failed to load quotes.')
       } finally {
@@ -62,17 +164,31 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
     return () => { cancelled = true; clearTimeout(timeoutId) }
   }, [workspace.id, loadAttempt])
 
-  const accepted = quotes.filter(q => q.status === 'accepted')
-  const pending  = quotes.filter(q => q.status === 'sent')
-  const revenue  = accepted.reduce((s, q) => s + (q.total || 0), 0)
+  function handleStatusChanged(quoteId, newStatus) {
+    setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: newStatus } : q))
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const thisMonth     = new Date().toISOString().slice(0, 7)
+  const acceptedAll   = quotes.filter(q => q.status === 'accepted')
+  const acceptedMonth = acceptedAll.filter(q => (q.accepted_at || q.created_at)?.slice(0, 7) === thisMonth)
+  const pending       = quotes.filter(q => q.status === 'sent')
+  const revenue       = acceptedAll.reduce((s, q) => s + (q.total || 0), 0)
+
   const trialRemaining = Math.max(0, TRIAL_QUOTE_LIMIT - quotes.length)
   const trialExhausted = isTrial && quotes.length >= TRIAL_QUOTE_LIMIT
+
+  // ── Filtered list ──────────────────────────────────────────────────────────
+  const filteredQuotes = filter === 'all'
+    ? quotes
+    : quotes.filter(q => q.status === filter || (filter === 'rejected' && q.status === 'declined'))
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onNavigate={onNavigate} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 pb-16">
+
         {/* Upgrade success banner */}
         {upgraded && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-xl px-5 py-4 flex items-center justify-between gap-3">
@@ -98,9 +214,7 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
         {/* Trial banner */}
         {isTrial && (
           <div className={`mb-6 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-            trialExhausted
-              ? 'bg-red-50 border border-red-200'
-              : 'bg-yellow-50 border border-yellow-200'
+            trialExhausted ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
           }`}>
             <div>
               <p className={`text-sm font-semibold ${trialExhausted ? 'text-red-700' : 'text-yellow-800'}`}>
@@ -153,10 +267,10 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: role === 'admin' ? 'Total Quotes' : 'My Quotes', value: quotes.length,   sub: 'all time' },
-            { label: 'Accepted',  value: accepted.length, sub: 'this month' },
-            { label: 'Pending',   value: pending.length,  sub: 'awaiting response' },
-            { label: 'Revenue',   value: fmt(revenue),    sub: 'accepted value' },
+            { label: role === 'admin' ? 'Total Quotes' : 'My Quotes', value: quotes.length,         sub: 'all time'            },
+            { label: 'Accepted',                                        value: acceptedMonth.length,  sub: 'this month'          },
+            { label: 'Pending',                                         value: pending.length,        sub: 'awaiting response'   },
+            { label: 'Revenue',                                         value: fmt(revenue),          sub: 'accepted (all time)' },
           ].map(stat => (
             <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-400 font-medium">{stat.label}</p>
@@ -183,6 +297,31 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
             )}
           </div>
 
+          {/* Filter tabs */}
+          <div className="flex items-center gap-0.5 px-4 py-2.5 border-b border-gray-100 overflow-x-auto">
+            {FILTER_LABELS.map(f => {
+              const count = f === 'all'
+                ? quotes.length
+                : quotes.filter(q => q.status === f || (f === 'rejected' && q.status === 'declined')).length
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                    filter === f
+                      ? 'bg-brand-600 text-white'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : capitalize(f)}
+                  <span className={`tabular-nums text-[10px] ${filter === f ? 'opacity-80' : 'opacity-50'}`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
           {loading ? (
             <div className="px-5 py-12 text-center text-sm text-gray-400">Loading quotes…</div>
           ) : loadError ? (
@@ -195,19 +334,25 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
                 Try again
               </button>
             </div>
-          ) : quotes.length === 0 ? (
+          ) : filteredQuotes.length === 0 ? (
             <div className="px-5 py-12 text-center">
-              <p className="text-sm text-gray-400 mb-3">No quotes yet</p>
-              <button
-                onClick={() => onOpenQuote(null)}
-                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
-              >
-                Create your first quote →
-              </button>
+              {quotes.length === 0 ? (
+                <>
+                  <p className="text-sm text-gray-400 mb-3">No quotes yet</p>
+                  <button
+                    onClick={() => onOpenQuote(null)}
+                    className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                  >
+                    Create your first quote →
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">No {filter} quotes</p>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" style={{ minWidth: '480px' }}>
+              <table className="w-full text-sm" style={{ minWidth: '520px' }}>
                 <thead>
                   <tr className="bg-gray-50 text-xs text-gray-400 uppercase tracking-wide">
                     <th className="text-left px-4 py-3 font-semibold">Quote #</th>
@@ -219,7 +364,7 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {quotes.map(q => (
+                  {filteredQuotes.map(q => (
                     <tr
                       key={q.id}
                       onClick={() => onOpenQuote(q.id)}
@@ -235,10 +380,12 @@ export default function Dashboard({ onOpenQuote, onNavigate, upgraded = false, o
                       <td className="px-4 py-4 text-gray-500 hidden sm:table-cell">{q.client_name || '—'}</td>
                       <td className="px-4 py-4 text-gray-400 hidden md:table-cell">{q.created_at?.slice(0, 10)}</td>
                       <td className="px-4 py-4 text-right font-semibold text-gray-900">{fmt(q.total || 0)}</td>
-                      <td className="px-4 py-4 text-center">
-                        <span className={`inline-block text-xs font-medium px-2.5 py-0.5 rounded-full ${STATUS_STYLES[q.status] || STATUS_STYLES.draft}`}>
-                          {capitalize(q.status)}
-                        </span>
+                      <td className="px-4 py-4 text-center" onClick={e => e.stopPropagation()}>
+                        <StatusChanger
+                          quoteId={q.id}
+                          status={q.status || 'draft'}
+                          onChanged={handleStatusChanged}
+                        />
                       </td>
                     </tr>
                   ))}

@@ -13,6 +13,15 @@ import { useAuth, TRIAL_QUOTE_LIMIT } from '../context/AuthContext.jsx'
 function todayISO()       { return new Date().toISOString().slice(0, 10) }
 function futureISO(days)  { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10) }
 
+const STATUS_STYLES = {
+  draft:    { bar: 'bg-gray-50 border-gray-200',   badge: 'bg-gray-100 text-gray-600',     label: 'Draft'    },
+  sent:     { bar: 'bg-blue-50 border-blue-200',   badge: 'bg-blue-100 text-blue-700',     label: 'Sent'     },
+  accepted: { bar: 'bg-green-50 border-green-200', badge: 'bg-green-100 text-green-700',   label: 'Accepted' },
+  rejected: { bar: 'bg-red-50 border-red-200',     badge: 'bg-red-100 text-red-700',       label: 'Rejected' },
+  declined: { bar: 'bg-red-50 border-red-200',     badge: 'bg-red-100 text-red-700',       label: 'Rejected' },
+  expired:  { bar: 'bg-orange-50 border-orange-200', badge: 'bg-orange-100 text-orange-700', label: 'Expired' },
+}
+
 function defaultMeta() {
   const year = new Date().getFullYear()
   return {
@@ -28,6 +37,7 @@ function defaultMeta() {
     projectAddress:'',
     designerName:  '',
     notes:         '',
+    status:        'draft',
   }
 }
 
@@ -40,9 +50,11 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
   const [saving,      setSaving]      = useState(false)
   const [saveError,   setSaveError]   = useState('')
   const [loadError,   setLoadError]   = useState('')
-  const [wsSettings,  setWsSettings]  = useState(null)
-  const [showAddArea, setShowAddArea] = useState(false)
-  const [presetModal, setPresetModal] = useState(null)  // { defaultArea } or null
+  const [wsSettings,      setWsSettings]      = useState(null)
+  const [showAddArea,     setShowAddArea]     = useState(false)
+  const [presetModal,     setPresetModal]     = useState(null)
+  const [statusChanging,  setStatusChanging]  = useState(false)
+  const [showAcceptModal, setShowAcceptModal] = useState(false)
 
   const {
     areas, items, gstEnabled,
@@ -126,19 +138,31 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
         if (iErr) throw iErr
 
         if (q) {
+          // Auto-expire if valid_until has passed and still draft/sent
+          let resolvedStatus = q.status || 'draft'
+          if (['draft', 'sent'].includes(resolvedStatus)) {
+            const today = new Date().toISOString().slice(0, 10)
+            const validUntil = q.valid_until || futureISO(30)
+            if (validUntil < today) {
+              resolvedStatus = 'expired'
+              supabase.from('quotes').update({ status: 'expired' }).eq('id', quoteId)
+            }
+          }
+
           setQuote({
-            quoteNumber:   q.quote_number   || '',
-            projectTitle:  q.project_name   || '',
-            date:          q.quote_date     || q.created_at?.slice(0, 10) || todayISO(),
-            validUntil:    q.valid_until    || futureISO(30),
-            currency:      q.currency       || 'USD',
-            clientName:    q.client_name    || '',
-            clientEmail:   q.client_email   || '',
-            clientContact: q.client_contact || '',
-            clientAddress: q.client_address || '',
+            quoteNumber:   q.quote_number    || '',
+            projectTitle:  q.project_name    || '',
+            date:          q.quote_date      || q.created_at?.slice(0, 10) || todayISO(),
+            validUntil:    q.valid_until     || futureISO(30),
+            currency:      q.currency        || 'USD',
+            clientName:    q.client_name     || '',
+            clientEmail:   q.client_email    || '',
+            clientContact: q.client_contact  || '',
+            clientAddress: q.client_address  || '',
             projectAddress:q.project_address || '',
-            designerName:  q.designer_name  || '',
-            notes:         q.notes          || '',
+            designerName:  q.designer_name   || '',
+            notes:         q.notes           || '',
+            status:        resolvedStatus,
           })
         }
 
@@ -226,6 +250,24 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
     } finally {
       await new Promise(resolve => setTimeout(resolve, 0))
       setExporting(false)
+    }
+  }
+
+  // ── Status change ──────────────────────────────────────────────────────────
+  async function handleStatusChange(newStatus) {
+    if (!savedId) return
+    setStatusChanging(true)
+    try {
+      const update = { status: newStatus }
+      if (newStatus === 'sent')     update.sent_at     = new Date().toISOString()
+      if (newStatus === 'accepted') update.accepted_at = new Date().toISOString()
+      if (newStatus === 'draft')  { update.sent_at = null; update.accepted_at = null }
+      const { error } = await supabase.from('quotes').update(update).eq('id', savedId)
+      if (!error) setQuote(prev => ({ ...prev, status: newStatus }))
+    } catch (err) {
+      console.error('Status change failed:', err)
+    } finally {
+      setStatusChanging(false)
     }
   }
 
@@ -377,6 +419,58 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
           </div>
         </div>
 
+        {/* Status bar */}
+        {savedId && (() => {
+          const st    = STATUS_STYLES[quote.status] || STATUS_STYLES.draft
+          const label = st.label
+          return (
+            <div className={`mb-6 rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 ${st.bar}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-gray-500">Status</span>
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.badge}`}>{label}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {quote.status === 'draft' && (
+                  <button
+                    onClick={() => handleStatusChange('sent')}
+                    disabled={statusChanging}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    {statusChanging ? '…' : 'Mark as Sent'}
+                  </button>
+                )}
+                {quote.status === 'sent' && (
+                  <>
+                    <button
+                      onClick={() => setShowAcceptModal(true)}
+                      disabled={statusChanging}
+                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      Mark as Accepted
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange('rejected')}
+                      disabled={statusChanging}
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      {statusChanging ? '…' : 'Mark as Rejected'}
+                    </button>
+                  </>
+                )}
+                {['accepted', 'rejected', 'declined', 'expired'].includes(quote.status) && (
+                  <button
+                    onClick={() => handleStatusChange('draft')}
+                    disabled={statusChanging}
+                    className="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    {statusChanging ? '…' : 'Reopen to Draft'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Meta form */}
         <QuoteMetaForm quote={quote} onChange={updateMeta} wsSettings={wsSettings} />
 
@@ -476,6 +570,37 @@ export default function QuotePage({ quoteId, onBack, onNavigate }) {
           onAdd={(area, presets) => { addItems(area, presets); setPresetModal(null) }}
           onClose={() => setPresetModal(null)}
         />
+      )}
+
+      {/* Accept confirmation modal */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-900 text-base text-center mb-2">Confirm acceptance</h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Confirm this quote has been accepted by the client?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAcceptModal(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-sm font-semibold rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                No
+              </button>
+              <button
+                onClick={() => { setShowAcceptModal(false); handleStatusChange('accepted') }}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                Yes, confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* PDF download toast */}
