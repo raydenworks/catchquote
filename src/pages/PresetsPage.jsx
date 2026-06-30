@@ -285,6 +285,7 @@ export default function PresetsPage({ onBack, onNavigate }) {
         user_id:         user.id,
         category:        g(row, 'Category', 'category') || 'General Labour',
         contractor_name: g(row, 'Contractor Name', 'contractor_name') || null,
+        item_name:       g(row, 'Item Label', 'item_name') || null,
         description:     g(row, 'Description', 'description').toString().trim(),
         unit:            g(row, 'Unit', 'unit') || 'item',
         cost_price:      parseFloat(g(row, 'Cost Price', 'cost_price')) || 0,

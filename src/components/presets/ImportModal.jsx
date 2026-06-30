@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 
-const EXPECTED = ['Category', 'Contractor Name', 'Description', 'Unit', 'Cost Price', 'Selling Price', 'Notes']
+const EXPECTED = ['Category', 'Contractor Name', 'Item Label', 'Description', 'Unit', 'Cost Price', 'Selling Price', 'Notes']
 
 function parseFile(file) {
   return new Promise((resolve, reject) => {
@@ -178,6 +178,7 @@ export default function ImportModal({ onImport, onClose }) {
                         <tr key={i} className="hover:bg-gray-50">
                           <td className="px-3 py-2 text-gray-500">{getField(row, 'Category', 'category') || <span className="text-gray-300">General Labour</span>}</td>
                           <td className="px-3 py-2 text-gray-500">{getField(row, 'Contractor Name', 'contractor_name') || <span className="text-gray-300">—</span>}</td>
+                          <td className="px-3 py-2 text-brand-600 font-medium">{getField(row, 'Item Label', 'item_name') || <span className="text-gray-300">—</span>}</td>
                           <td className="px-3 py-2 font-medium text-gray-800 max-w-[220px]">
                             {getField(row, 'Description', 'description')}
                           </td>
