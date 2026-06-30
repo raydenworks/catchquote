@@ -5,6 +5,7 @@ import { UNITS, unitLabel } from '../../constants/units.js'
 const BLANK = {
   category: 'General Labour',
   contractor_name: '',
+  item_name: '',
   description: '',
   unit: 'unit',
   cost_price: '',
@@ -125,16 +126,30 @@ export default function PresetModal({ preset, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="modal-label">Description <span className="text-red-400">*</span></label>
-            <input
-              required
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-              className="modal-input"
-              placeholder="e.g. Supply and install 600×600 floor tiles"
-            />
+          {/* Item Name + Description */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="modal-label">
+                Item Label <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                value={form.item_name || ''}
+                onChange={e => set('item_name', e.target.value)}
+                className="modal-input"
+                placeholder="e.g. Master Bedroom"
+              />
+              <p className="text-xs text-gray-400 mt-1">Short name shown only in the picker</p>
+            </div>
+            <div className="col-span-2">
+              <label className="modal-label">Description <span className="text-red-400">*</span></label>
+              <input
+                required
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                className="modal-input"
+                placeholder="e.g. Supply and install 600×600 floor tiles"
+              />
+            </div>
           </div>
 
           {/* Row 3: Unit + Cost + Sell */}

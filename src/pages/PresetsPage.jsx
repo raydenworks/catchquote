@@ -231,6 +231,7 @@ export default function PresetsPage({ onBack, onNavigate }) {
       user_id:         user.id,
       category:        form.category,
       contractor_name: form.contractor_name || null,
+      item_name:       form.item_name?.trim() || null,
       description:     form.description.trim(),
       unit:            form.unit,
       cost_price:      parseFloat(form.cost_price) || 0,
