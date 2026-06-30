@@ -9,6 +9,7 @@ function buildStaticGroups() {
     g[cat] = items.map((item, i) => ({
       id: `static-${cat}-${i}`,
       category: cat,
+      item_name: item.item,
       description: item.description,
       unit: item.unit,
       selling_price: item.unitPrice,
@@ -37,7 +38,7 @@ export default function PresetPicker({ areas, defaultArea, onAdd, onClose }) {
     async function load() {
       const { data } = await supabase
         .from('user_presets')
-        .select('id, category, contractor_name, description, unit, selling_price, unit_price')
+        .select('id, category, item_name, contractor_name, description, unit, selling_price, unit_price')
         .eq('workspace_id', workspace.id)
         .eq('status', 'active')
         .order('category',    { ascending: true })
@@ -64,10 +65,14 @@ export default function PresetPicker({ areas, defaultArea, onAdd, onClose }) {
   const allItems    = groups?.[currentCat] ?? []
 
   const filteredItems = search.trim()
-    ? allItems.filter(p =>
-        p.description?.toLowerCase().includes(search.toLowerCase()) ||
-        p.contractor_name?.toLowerCase().includes(search.toLowerCase())
-      )
+    ? allItems.filter(p => {
+        const q = search.toLowerCase()
+        return (
+          p.item_name?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          p.contractor_name?.toLowerCase().includes(q)
+        )
+      })
     : allItems
 
   function toggleItem(id) {
@@ -193,9 +198,12 @@ export default function PresetPicker({ areas, defaultArea, onAdd, onClose }) {
                           className="w-4 h-4 rounded accent-brand-600 shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-800 font-medium truncate">{item.description}</p>
+                          {item.item_name && (
+                            <p className="text-xs font-semibold text-brand-600 mb-0.5">{item.item_name}</p>
+                          )}
+                          <p className="text-xs text-gray-500 leading-snug">{item.description}</p>
                           {item.contractor_name && (
-                            <p className="text-xs text-gray-400 truncate">{item.contractor_name}</p>
+                            <p className="text-xs text-gray-400 truncate mt-0.5">{item.contractor_name}</p>
                           )}
                         </div>
                         <div className="text-right shrink-0">
